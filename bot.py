@@ -66,17 +66,17 @@ async def answer(message: types.Message, state:FSMContext):
         await asyncio.sleep(3)
 
 
-async def scheduler():
-    print('proverka')
-    # time.sleep()
-    # aioschedule.every().day.at(NOTE_TIME).do(notification)
-    # while True:
-    #     await aioschedule.run_pending()
-    #     await asyncio.sleep(3)
+# async def scheduler():
+#     print('proverka')
+#     # time.sleep()
+#     # aioschedule.every().day.at(NOTE_TIME).do(notification)
+#     # while True:
+#     #     await aioschedule.run_pending()
+#     #     await asyncio.sleep(3)
 
 
-async def on_startup(x):
-    asyncio.create_task(scheduler())
+# async def on_startup(x):
+#     asyncio.create_task(scheduler())
 
 def postpone_keyboard():
     alarm_keyboard = types.InlineKeyboardMarkup()
@@ -95,6 +95,7 @@ def postpone_keyboard():
 async def notification(chat_id):
     print('все ок, работаем')
     await bot.send_message(chat_id=chat_id, text='Привет, я твое напоминание', reply_markup=postpone_keyboard())
+    await Reminder.next()
 
 
 @dp.callback_query_handler(lambda c: c.data)
@@ -102,11 +103,25 @@ async def callback_time(call: types.CallbackQuery):
     if call.data == 'select':
         await call.message.reply("Введите время в формате HH:MM")
         await Reminder.check_time.set()
+
+
+@dp.callback_query_handler(lambda c: c.data, state=Reminder.alarm)
+async def callback_remind(call: types.CallbackQuery):
     if call.data == 'game':
-        print('the game is starting')
+        await call.message.reply("The game is started")
+    if call.data == '1':
+        hour = call.data
+        aioschedule.every().day.at(convert(hour)).do(notification, call.message.chat.id)
+        await call.message.reply('Отложил игру на час')
+
+
+def convert(hour):
+    now = datetime.datetime.now()
+    now_to_str = now.strftime('%H:%M')
+    now_to_str = now_to_str.split(':')
+    itogo = str(int(now_to_str[0])) + ':' + str(int(now_to_str[1]) + int(hour))
+    return itogo
 
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=False, on_startup=on_startup)
-
-
+    executor.start_polling(dp, skip_updates=False)

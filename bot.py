@@ -28,11 +28,6 @@ async def process_start_command(message: types.Message):
     await message.reply('Привет, я бот, напиши мне что-нибудь!', reply_markup=get_start_keyboard())
 
 
-# @dp.message_handler(commands=['help'])
-# async def process_help_command(message: types.Message):
-#     await bot.send_message(message.from_user.id, text='не ебу чем тебе помочь')
-
-
 #Создаем начальную клавиатуру
 def get_start_keyboard():
     start_keyboard = types.InlineKeyboardMarkup()
@@ -49,7 +44,7 @@ NOTE_TIME = '23:59'
 
 
 @dp.message_handler(content_types='text', state=Reminder.check_time)
-async def answer(message: types.Message, state:FSMContext):
+async def answer(message: types.Message, state: FSMContext):
     try:
         time.strptime(message.text, '%H:%M')
         await message.reply('Отлично, мы запомним это время')
@@ -65,18 +60,6 @@ async def answer(message: types.Message, state:FSMContext):
         await aioschedule.run_pending()
         await asyncio.sleep(3)
 
-
-# async def scheduler():
-#     print('proverka')
-#     # time.sleep()
-#     # aioschedule.every().day.at(NOTE_TIME).do(notification)
-#     # while True:
-#     #     await aioschedule.run_pending()
-#     #     await asyncio.sleep(3)
-
-
-# async def on_startup(x):
-#     asyncio.create_task(scheduler())
 
 def postpone_keyboard():
     alarm_keyboard = types.InlineKeyboardMarkup()
@@ -94,7 +77,7 @@ def postpone_keyboard():
 
 async def notification(chat_id):
     print('все ок, работаем')
-    await bot.send_message(chat_id=chat_id, text='Привет, я твое напоминание', reply_markup=postpone_keyboard())
+    await bot.send_message(chat_id=chat_id, text='Привет, время начать игру', reply_markup=postpone_keyboard())
     await Reminder.next()
 
 
@@ -111,8 +94,26 @@ async def callback_remind(call: types.CallbackQuery):
         await call.message.reply("The game is started")
     if call.data == '1':
         hour = call.data
-        aioschedule.every().day.at(convert(hour)).do(notification, call.message.chat.id)
+        aioschedule.every().day.at(convert(hour)).do(postpone_note, call.message.chat.id, call.data)
         await call.message.reply('Отложил игру на час')
+    if call.data == '2':
+        hour = call.data
+        aioschedule.every().day.at(convert(hour)).do(postpone_note, call.message.chat.id, call.data)
+        await call.message.reply('Отложил игру на 2 часа')
+    if call.data == '4':
+        hour = call.data
+        aioschedule.every().day.at(convert(hour)).do(postpone_note, call.message.chat.id, call.data)
+        await call.message.reply('Отложил игру на 4 часа')
+    if call.data == '8':
+        hour = call.data
+        aioschedule.every().day.at(convert(hour)).do(postpone_note, call.message.chat.id, call.data)
+        await call.message.reply('Отложил игру на 8 часов')
+    if call.data == '24':
+        await call.message.reply('Отложил игру на завтра')
+
+
+async def postpone_note(chat_id, hour):
+    await bot.send_message(chat_id=chat_id, text='Время пришло! Давай начинать! ')
 
 
 def convert(hour):
